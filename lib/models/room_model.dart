@@ -60,6 +60,18 @@ class RoomModel {
       pinnedMessage: pinnedMessage ?? this.pinnedMessage,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'type': type,
+      'members': members.map((m) => m.toJson()).toList(),
+      'lastMessage': lastMessage?.toJson(),
+      'unreadCount': unreadCount,
+      'pinnedMessageId': pinnedMessageId,
+      'pinnedMessage': pinnedMessage?.toJson(),
+    };
+  }
 }
 
 class RoomMember {
@@ -73,5 +85,12 @@ class RoomMember {
       userId: json['userId']?.toString() ?? '',
       user: UserModel.fromJson(json['user'] ?? {}),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'userId': userId,
+      'user': user.toJson(),
+    };
   }
 }

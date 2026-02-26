@@ -114,145 +114,150 @@ class ChatListTab extends StatelessWidget {
                       ),
                     ),
                   Expanded(
-                    child: ListView.builder(
-                      padding: const EdgeInsets.only(top: 0, bottom: 80),
-                      itemCount: filteredRooms.length,
-                      itemBuilder: (context, index) {
-                        final room = filteredRooms[index];
-                        final otherMembers = room.members.where((m) => m.userId != currentUserId).toList();
-                        if (otherMembers.isEmpty) return const SizedBox.shrink();
-                        final other = otherMembers.first;
+                    child: RefreshIndicator(
+                      onRefresh: () => chat.refreshFromServer(),
+                      color: t.primary,
+                      child: ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.only(top: 0, bottom: 80),
+                        itemCount: filteredRooms.length,
+                        itemBuilder: (context, index) {
+                          final room = filteredRooms[index];
+                          final otherMembers = room.members.where((m) => m.userId != currentUserId).toList();
+                          if (otherMembers.isEmpty) return const SizedBox.shrink();
+                          final other = otherMembers.first;
 
-                        final isOnline = chat.onlineUserIds.contains(other.userId);
-                        final isRoomTyping = chat.isTyping(room.id);
-                        final displayName = other.user.username ?? other.user.email ?? 'Unknown';
-                        final avatarBg = t.avatarColor(displayName);
+                          final isOnline = chat.onlineUserIds.contains(other.userId);
+                          final isRoomTyping = chat.isTyping(room.id);
+                          final displayName = other.user.username ?? other.user.email ?? 'Unknown';
+                          final avatarBg = t.avatarColor(displayName);
 
-                        String timeStr = '';
-                        if (room.lastMessage?.createdAt != null) {
-                          final dt = room.lastMessage!.createdAt;
-                          final now = DateTime.now();
-                          if (dt.year == now.year && dt.month == now.month && dt.day == now.day) {
-                            timeStr = DateFormat('HH:mm').format(dt);
-                          } else {
-                            timeStr = DateFormat('MMM d').format(dt);
+                          String timeStr = '';
+                          if (room.lastMessage?.createdAt != null) {
+                            final dt = room.lastMessage!.createdAt;
+                            final now = DateTime.now();
+                            if (dt.year == now.year && dt.month == now.month && dt.day == now.day) {
+                              timeStr = DateFormat('HH:mm').format(dt);
+                            } else {
+                              timeStr = DateFormat('MMM d').format(dt);
+                            }
                           }
-                        }
 
-                        return InkWell(
-                          onTap: () {
-                            chat.setActiveRoom(room.id);
-                            Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatScreen()));
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                            child: Row(
-                              children: [
-                                Stack(
-                                  children: [
-                                    Container(
-                                      width: 56,
-                                      height: 56,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: avatarBg,
-                                      ),
-                                      child: other.user.avatarUrl != null
-                                          ? ClipOval(
-                                              child: Image.network(
-                                                '${auth.baseUrl}${other.user.avatarUrl}',
-                                                fit: BoxFit.cover,
-                                                errorBuilder: (context, error, stackTrace) => Center(
-                                                  child: Text(
-                                                    displayName[0].toUpperCase(),
-                                                    style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800),
+                          return InkWell(
+                            onTap: () {
+                              chat.setActiveRoom(room.id);
+                              Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatScreen()));
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                              child: Row(
+                                children: [
+                                  Stack(
+                                    children: [
+                                      Container(
+                                        width: 56,
+                                        height: 56,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: avatarBg,
+                                        ),
+                                        child: other.user.avatarUrl != null
+                                            ? ClipOval(
+                                                child: Image.network(
+                                                  '${auth.baseUrl}${other.user.avatarUrl}',
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (context, error, stackTrace) => Center(
+                                                    child: Text(
+                                                      displayName[0].toUpperCase(),
+                                                      style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800),
+                                                    ),
                                                   ),
                                                 ),
+                                              )
+                                            : Center(
+                                                child: Text(
+                                                  displayName[0].toUpperCase(),
+                                                  style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800),
+                                                ),
                                               ),
-                                            )
-                                          : Center(
-                                              child: Text(
-                                                displayName[0].toUpperCase(),
-                                                style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800),
-                                              ),
+                                      ),
+                                      if (isOnline)
+                                        Positioned(
+                                          right: 1,
+                                          bottom: 1,
+                                          child: Container(
+                                            width: 16,
+                                            height: 16,
+                                            decoration: BoxDecoration(
+                                              color: t.online,
+                                              shape: BoxShape.circle,
+                                              border: Border.all(color: t.bgPrimary, width: 2.5),
                                             ),
-                                    ),
-                                    if (isOnline)
-                                      Positioned(
-                                        right: 1,
-                                        bottom: 1,
-                                        child: Container(
-                                          width: 16,
-                                          height: 16,
-                                          decoration: BoxDecoration(
-                                            color: t.online,
-                                            shape: BoxShape.circle,
-                                            border: Border.all(color: t.bgPrimary, width: 2.5),
                                           ),
                                         ),
-                                      ),
-                                  ],
-                                ),
-                                const SizedBox(width: 14),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        displayName,
-                                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: t.textPrimary),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      isRoomTyping
-                                          ? Text(
-                                              'typing...',
-                                              style: TextStyle(color: t.primary, fontStyle: FontStyle.italic, fontSize: 13, fontWeight: FontWeight.w600),
-                                            )
-                                          : Text(
-                                              room.lastMessage?.content ?? 'Start a conversation',
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: TextStyle(fontSize: 13, color: t.textSecondary, fontWeight: FontWeight.w400),
-                                            ),
                                     ],
                                   ),
-                                ),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    if (timeStr.isNotEmpty)
-                                      Text(
-                                        timeStr,
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          color: room.unreadCount > 0 ? t.primary : t.textMuted,
-                                          fontWeight: room.unreadCount > 0 ? FontWeight.bold : FontWeight.w600,
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          displayName,
+                                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: t.textPrimary),
                                         ),
-                                      ),
-                                    if (room.unreadCount > 0) ...[
-                                      const SizedBox(height: 6),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: t.primary,
-                                          borderRadius: BorderRadius.circular(10),
-                                        ),
-                                        constraints: const BoxConstraints(minWidth: 20),
-                                        child: Center(
-                                          child: Text(
-                                            '${room.unreadCount}',
-                                            style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                                        const SizedBox(height: 4),
+                                        isRoomTyping
+                                            ? Text(
+                                                'typing...',
+                                                style: TextStyle(color: t.primary, fontStyle: FontStyle.italic, fontSize: 13, fontWeight: FontWeight.w600),
+                                              )
+                                            : Text(
+                                                room.lastMessage?.content ?? 'Start a conversation',
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(fontSize: 13, color: t.textSecondary, fontWeight: FontWeight.w400),
+                                              ),
+                                      ],
+                                    ),
+                                  ),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      if (timeStr.isNotEmpty)
+                                        Text(
+                                          timeStr,
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: room.unreadCount > 0 ? t.primary : t.textMuted,
+                                            fontWeight: room.unreadCount > 0 ? FontWeight.bold : FontWeight.w600,
                                           ),
                                         ),
-                                      ),
+                                      if (room.unreadCount > 0) ...[
+                                        const SizedBox(height: 6),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: t.primary,
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          constraints: const BoxConstraints(minWidth: 20),
+                                          child: Center(
+                                            child: Text(
+                                              '${room.unreadCount}',
+                                              style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ],
-                                  ],
-                                ),
-                              ],
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        );
-                      },
+                          );
+                        },
+                      ),
                     ),
                   ),
                 ],

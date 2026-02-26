@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/chat_provider.dart';
+import '../providers/social_provider.dart';
 import 'home/chat_list_tab.dart';
 import 'home/friends_tab.dart';
 import 'home/user_search_screen.dart';
@@ -83,9 +84,9 @@ class _MainScreenState extends State<MainScreen> {
               style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: t.textPrimary, letterSpacing: -0.2),
             ),
             if (_selectedIndex == 0)
-              Consumer<ChatProvider>(
-                builder: (context, chat, _) {
-                  final count = chat.onlineUserIds.length;
+              Consumer2<ChatProvider, SocialProvider>(
+                builder: (context, chat, social, _) {
+                  final onlineFriendsCount = chat.onlineUserIds.where((id) => social.friendIds.contains(id)).length;
                   return Padding(
                     padding: const EdgeInsets.only(top: 2),
                     child: Row(
@@ -98,7 +99,7 @@ class _MainScreenState extends State<MainScreen> {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          '$count online',
+                          '$onlineFriendsCount friends online',
                           style: TextStyle(fontSize: 10, color: t.textSecondary, fontWeight: FontWeight.w700),
                         ),
                       ],

@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../core/api/api_client.dart';
 import '../core/socket/socket_service.dart';
 import '../core/notifications/notification_service.dart';
@@ -36,7 +38,6 @@ class ChatProvider extends ChangeNotifier {
 
   void init(String token, String userId) {
     if (_initialized) {
-      // Already initialized — just reconnect the socket if needed
       _socketService.reconnect();
       return;
     }
@@ -44,8 +45,33 @@ class ChatProvider extends ChangeNotifier {
     _currentUserId = userId;
     _socketService.connect(token);
     _notificationService.init();
+    _loadCachedRooms(); // Load local data first
     _listenToEvents();
-    fetchRooms();
+    fetchRooms(); // Then fetch fresh data
+  }
+
+  Future<void> _loadCachedRooms() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? roomsJson = prefs.getString('cached_rooms');
+      if (roomsJson != null) {
+        final List<dynamic> list = jsonDecode(roomsJson);
+        _rooms = list.map((r) => RoomModel.fromJson(Map<String, dynamic>.from(r))).toList();
+        notifyListeners();
+      }
+    } catch (e) {
+      print('Error loading cached rooms: $e');
+    }
+  }
+
+  Future<void> _saveRoomsToCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String roomsJson = jsonEncode(_rooms.map((r) => r.toJson()).toList());
+      await prefs.setString('cached_rooms', roomsJson);
+    } catch (e) {
+      print('Error saving rooms to cache: $e');
+    }
   }
 
   /// Refresh all data from the server (rooms + active room messages)
@@ -58,15 +84,10 @@ class ChatProvider extends ChangeNotifier {
 
   void _listenToEvents() {
     _socketService.messageStream.listen((data) {
-      print('DEBUG: Incoming message data: $data');
       try {
         final message = MessageModel.fromJson(data);
-        print('DEBUG: Parsed message ID: ${message.id} for room: ${message.roomId}');
         
-        if (_seenMessageIds.contains(message.id)) {
-          print('DEBUG: Message already seen, skipping.');
-          return;
-        }
+        if (_seenMessageIds.contains(message.id)) return;
         _seenMessageIds.add(message.id);
         
         if (_messagesByRoom.containsKey(message.roomId)) {
@@ -85,14 +106,13 @@ class ChatProvider extends ChangeNotifier {
                 : room.unreadCount,
           );
           _rooms.insert(0, updatedRoom);
+          _saveRoomsToCache();
         }
         
         // If message is for THIS user from SOMEONE ELSE, mark as DELIVERED
         if (message.senderId != _currentUserId) {
-          print('DEBUG: Marking message ${message.id} as DELIVERED');
           _socketService.markAsReceived(message.id);
           
-          // Show push notification if NOT currently viewing this room
           if (_activeRoomId != message.roomId) {
             final senderName = data['sender']?['username']?.toString() ?? 'Someone';
             _notificationService.showMessageNotification(
@@ -103,11 +123,9 @@ class ChatProvider extends ChangeNotifier {
           }
         }
 
-        print('DEBUG: Notifying listeners. Messages in room: ${_messagesByRoom[message.roomId]?.length}');
         notifyListeners();
       } catch (e, stack) {
-        print('DEBUG: Error parsing/handling message: $e');
-        print(stack);
+        print('Error handling message sync: $e');
       }
     });
 
@@ -144,9 +162,6 @@ class ChatProvider extends ChangeNotifier {
       final String roomId = data['roomId']?.toString() ?? '';
       final String? messageId = data['messageId']?.toString();
       final String statusStr = data['status']?.toString() ?? '';
-      final String? eventUserId = data['userId']?.toString();
-      
-      print('DEBUG: Received status update: messageId=$messageId, roomId=$roomId, status=$statusStr');
       
       final newStatus = _parseStatus(statusStr);
       final statusMap = {MessageStatus.SENT: 1, MessageStatus.DELIVERED: 2, MessageStatus.SEEN: 3};
@@ -160,12 +175,9 @@ class ChatProvider extends ChangeNotifier {
         
         for (int i = 0; i < messages.length; i++) {
           final m = messages[i];
-          
-          // Don't downgrade status
           if (statusMap[newStatus]! <= statusMap[m.status]!) continue;
           
           if (messageId != null && messageId.isNotEmpty && m.id == messageId) {
-            // Single message update (DELIVERED)
             messages[i] = m.copyWith(
               status: newStatus,
               deliveredAt: newStatus == MessageStatus.DELIVERED ? timestamp : null,
@@ -173,7 +185,6 @@ class ChatProvider extends ChangeNotifier {
             );
             changed = true;
           } else if ((messageId == null || messageId.isEmpty) && m.senderId == _currentUserId) {
-            // Bulk update: other user saw ALL my messages in this room
             messages[i] = m.copyWith(
               status: newStatus,
               deliveredAt: newStatus == MessageStatus.DELIVERED ? timestamp : m.deliveredAt,
@@ -183,7 +194,10 @@ class ChatProvider extends ChangeNotifier {
           }
         }
         
-        if (changed) notifyListeners();
+        if (changed) {
+          _saveRoomsToCache();
+          notifyListeners();
+        }
       }
     });
 
@@ -194,15 +208,11 @@ class ChatProvider extends ChangeNotifier {
       final roomIndex = _rooms.indexWhere((r) => r.id == roomId);
       if (roomIndex != -1) {
         final room = _rooms[roomIndex];
-        _rooms[roomIndex] = RoomModel(
-          id: room.id,
-          type: room.type,
-          members: room.members,
-          lastMessage: room.lastMessage,
-          unreadCount: room.unreadCount,
+        _rooms[roomIndex] = room.copyWith(
           pinnedMessageId: pinnedMsgData?['id']?.toString(),
           pinnedMessage: pinnedMsgData != null ? MessageModel.fromJson(pinnedMsgData) : null,
         );
+        _saveRoomsToCache();
         notifyListeners();
       }
     });
@@ -216,8 +226,42 @@ class ChatProvider extends ChangeNotifier {
         final messages = _messagesByRoom[roomId]!;
         final msgIndex = messages.indexWhere((m) => m.id == messageId);
         if (msgIndex != -1) {
-          final reactions = reactionsData.map((r) => ReactionModel.fromJson(r)).toList();
+          final reactions = reactionsData.map((r) => ReactionModel.fromJson(Map<String, dynamic>.from(r))).toList();
           messages[msgIndex] = messages[msgIndex].copyWith(reactions: reactions);
+          notifyListeners();
+        }
+      }
+    });
+
+    // Handle Profile Updates
+    _socketService.socialStream.listen((eventData) {
+      if (eventData['event'] == 'profile_updated') {
+        final data = eventData['data'];
+        final String userId = data['userId'].toString();
+        
+        bool changed = false;
+        for (int i = 0; i < _rooms.length; i++) {
+          final members = _rooms[i].members;
+          final memberIndex = members.indexWhere((m) => m.userId == userId);
+          if (memberIndex != -1) {
+            final existingUser = members[memberIndex].user;
+            final updatedUser = UserModel(
+              id: userId,
+              username: data['username'] ?? existingUser.username,
+              avatarUrl: data['avatarUrl'] ?? existingUser.avatarUrl,
+              bio: data['bio'] ?? existingUser.bio,
+              presence: existingUser.presence,
+            );
+            
+            final updatedMembers = List<RoomMember>.from(members);
+            updatedMembers[memberIndex] = RoomMember(userId: userId, user: updatedUser);
+            _rooms[i] = _rooms[i].copyWith(members: updatedMembers);
+            changed = true;
+          }
+        }
+        
+        if (changed) {
+          _saveRoomsToCache();
           notifyListeners();
         }
       }
@@ -236,11 +280,12 @@ class ChatProvider extends ChangeNotifier {
   }
 
   Future<void> fetchRooms() async {
-    _isLoading = true;
+    _isLoading = _rooms.isEmpty; // Only show loading if we have no cached data
     notifyListeners();
     try {
       final response = await _apiClient.getRooms();
-      _rooms = (response.data as List).map((r) => RoomModel.fromJson(r)).toList();
+      _rooms = (response.data as List).map((r) => RoomModel.fromJson(Map<String, dynamic>.from(r))).toList();
+      _saveRoomsToCache();
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -257,12 +302,12 @@ class ChatProvider extends ChangeNotifier {
     if (!_messagesByRoom.containsKey(roomId)) {
       await fetchMessages(roomId);
     }
-    // Mark all messages as SEEN when entering the room
     _socketService.markAsSeen(roomId);
     
     final roomIndex = _rooms.indexWhere((r) => r.id == roomId);
     if (roomIndex != -1) {
       _rooms[roomIndex] = _rooms[roomIndex].copyWith(unreadCount: 0);
+      _saveRoomsToCache();
     }
     
     notifyListeners();
@@ -271,9 +316,8 @@ class ChatProvider extends ChangeNotifier {
   Future<void> fetchMessages(String roomId) async {
     try {
       final response = await _apiClient.getMessages(roomId);
-      // Keep in descending order (newest first) — ListView with reverse:true handles display
       final messages = (response.data as List)
-          .map((m) => MessageModel.fromJson(m))
+          .map((m) => MessageModel.fromJson(Map<String, dynamic>.from(m)))
           .toList();
       _messagesByRoom[roomId] = messages;
       notifyListeners();
@@ -292,21 +336,10 @@ class ChatProvider extends ChangeNotifier {
     notifyListeners();
     try {
       final response = await _apiClient.searchUsers(query);
-      
       if (response.data != null) {
         final List<dynamic> data = response.data as List;
-        final List<UserModel> allUsers = data.map((u) {
-          final map = u as Map<String, dynamic>;
-          return UserModel(
-            id: map['id']?.toString() ?? '',
-            email: map['email']?.toString(),
-            username: map['username']?.toString(),
-            avatarUrl: map['avatarUrl']?.toString(),
-            presence: map['presence']?.toString() ?? 'OFFLINE',
-          );
-        }).toList();
-        
-        _searchResults = allUsers.where((u) => u.id != (_currentUserId ?? '')).toList();
+        _searchResults = data.map((u) => UserModel.fromJson(Map<String, dynamic>.from(u)))
+            .where((u) => u.id != (_currentUserId ?? '')).toList();
       } else {
         _searchResults = [];
       }
@@ -323,9 +356,10 @@ class ChatProvider extends ChangeNotifier {
   Future<String?> startPrivateChat(String targetUserId) async {
     try {
       final response = await _apiClient.createPrivateRoom(targetUserId);
-      final room = RoomModel.fromJson(response.data);
+      final room = RoomModel.fromJson(Map<String, dynamic>.from(response.data));
       if (!_rooms.any((r) => r.id == room.id)) {
         _rooms.insert(0, room);
+        _saveRoomsToCache();
       }
       await setActiveRoom(room.id);
       return room.id;
@@ -373,7 +407,6 @@ class ChatProvider extends ChangeNotifier {
 
   @override
   void dispose() {
-    _socketService.dispose();
     super.dispose();
   }
 }

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -23,15 +24,25 @@ class AuthProvider extends ChangeNotifier {
   Future<void> _loadSession() async {
     final prefs = await SharedPreferences.getInstance();
     _token = prefs.getString('jwt_token');
+    
+    final userJson = prefs.getString('user_data');
+    if (userJson != null) {
+      _user = UserModel.fromJson(jsonDecode(userJson));
+    }
+
     if (_token != null) {
       try {
         final response = await _apiClient.dio.get('/users/me');
         _user = UserModel.fromJson(response.data);
+        await prefs.setString('user_data', jsonEncode(_user!.toJson()));
       } catch (e) {
         print('Session restore failed: $e');
-        // Token likely expired — clear it
-        _token = null;
-        await prefs.remove('jwt_token');
+        if (e.toString().contains('401')) {
+          _token = null;
+          _user = null;
+          await prefs.remove('jwt_token');
+          await prefs.remove('user_data');
+        }
       }
     }
     notifyListeners();
@@ -48,6 +59,7 @@ class AuthProvider extends ChangeNotifier {
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('jwt_token', _token!);
+      await prefs.setString('user_data', jsonEncode(_user!.toJson()));
       
       _isLoading = false;
       notifyListeners();
@@ -70,6 +82,7 @@ class AuthProvider extends ChangeNotifier {
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('jwt_token', _token!);
+      await prefs.setString('user_data', jsonEncode(_user!.toJson()));
 
       _isLoading = false;
       notifyListeners();
@@ -86,6 +99,7 @@ class AuthProvider extends ChangeNotifier {
     _user = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('jwt_token');
+    await prefs.remove('user_data');
     notifyListeners();
   }
 
@@ -93,6 +107,10 @@ class AuthProvider extends ChangeNotifier {
     try {
       final response = await _apiClient.updateProfile(data);
       _user = UserModel.fromJson(response.data);
+      
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user_data', jsonEncode(_user!.toJson()));
+      
       notifyListeners();
       return true;
     } catch (e) {

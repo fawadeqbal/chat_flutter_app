@@ -92,6 +92,7 @@ class SocketService {
     // Social events
     s.on('friend:request:received', (data) => _socialController.add({'event': 'request:received', 'data': data}));
     s.on('friend:request:accepted', (data) => _socialController.add({'event': 'request:accepted', 'data': data}));
+    s.on('user:profile_updated', (data) => _socialController.add({'event': 'profile_updated', 'data': data}));
 
     // Call events
     s.on('call:incoming', (data) => _callIncomingController.add(Map<String, dynamic>.from(data)));
