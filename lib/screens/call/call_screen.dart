@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import '../../providers/call_provider.dart';
+import '../../providers/random_match_provider.dart';
 import '../../providers/theme_provider.dart';
 
 class CallOverlay extends StatelessWidget {
@@ -226,76 +227,149 @@ class _ActiveCallView extends StatelessWidget {
 
             // Video area
             Expanded(
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1E1E1E),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: Colors.white.withOpacity(0.06)),
-                ),
-                child: Stack(
-                  children: [
-                    // Remote video
-                    if (call.remoteStream != null)
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(24),
-                        child: RTCVideoView(
-                          call.remoteRenderer,
-                          objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
-                        ),
-                      )
-                    else
-                      Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              width: 72,
-                              height: 72,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.white.withOpacity(0.05),
+              child: GestureDetector(
+                onVerticalDragEnd: (details) {
+                  // Detect Swipe Up
+                  if (details.primaryVelocity != null && details.primaryVelocity! < -500) {
+                    final match = Provider.of<RandomMatchProvider>(context, listen: false);
+                    if (match.state == MatchState.matched) {
+                      match.skipMatch();
+                    }
+                  }
+                },
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1E1E1E),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: Colors.white.withOpacity(0.06)),
+                  ),
+                  child: Stack(
+                    children: [
+                      // Remote video
+                      if (call.remoteStream != null)
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(24),
+                          child: RTCVideoView(
+                            call.remoteRenderer,
+                            objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+                          ),
+                        )
+                      else
+                        Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                width: 72,
+                                height: 72,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.white.withOpacity(0.05),
+                                ),
+                                child: Icon(Icons.videocam_rounded, size: 28, color: Colors.white.withOpacity(0.3)),
                               ),
-                              child: Icon(Icons.videocam_rounded, size: 28, color: Colors.white.withOpacity(0.3)),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              isCalling ? 'Ringing...' : 'Waiting for peer...',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white.withOpacity(0.3),
-                                letterSpacing: 1.5,
+                              const SizedBox(height: 12),
+                              Text(
+                                isCalling ? 'Ringing...' : 'Waiting for peer...',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white.withOpacity(0.3),
+                                  letterSpacing: 1.5,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
+
+                      // Overlay for Random Match (Portrait Name & Avatar)
+                      Consumer<RandomMatchProvider>(
+                        builder: (context, match, _) {
+                          if (match.state == MatchState.matched) {
+                            return Positioned(
+                              top: 20,
+                              left: 20,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.4),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: Colors.white.withOpacity(0.1)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 12,
+                                      backgroundColor: t.primary,
+                                      child: const Icon(Icons.person, size: 14, color: Colors.white),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      userName,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
                       ),
 
-                    // Local PiP
-                    if (call.localStream != null)
-                      Positioned(
-                        bottom: 12,
-                        right: 12,
-                        child: Container(
-                          width: 100,
-                          height: 140,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.white.withOpacity(0.1)),
-                            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 12)],
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(16),
-                            child: RTCVideoView(
-                              call.localRenderer,
-                              mirror: true,
-                              objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+                      // Local PiP
+                      if (call.localStream != null)
+                        Positioned(
+                          bottom: 12,
+                          right: 12,
+                          child: Container(
+                            width: 100,
+                            height: 140,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: Colors.white.withOpacity(0.1)),
+                              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 12)],
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: RTCVideoView(
+                                call.localRenderer,
+                                mirror: true,
+                                objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+                              ),
                             ),
                           ),
                         ),
+                      
+                      // Swipe Up Prompt
+                      Positioned(
+                        bottom: 40,
+                        left: 0,
+                        right: 0,
+                        child: Center(
+                          child: Column(
+                            children: [
+                              Icon(Icons.keyboard_arrow_up_rounded, color: Colors.white.withOpacity(0.5), size: 30),
+                              Text(
+                                'SWIPE UP TO SKIP',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.5),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 2,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -317,6 +391,20 @@ class _ActiveCallView extends StatelessWidget {
                     icon: call.isVideoOn ? Icons.videocam_rounded : Icons.videocam_off_rounded,
                     isActive: !call.isVideoOn,
                     onTap: call.toggleVideo,
+                  ),
+                  // Skip button for Random Match
+                  Consumer<RandomMatchProvider>(
+                    builder: (context, match, _) {
+                      if (match.state == MatchState.matched) {
+                        return _ControlButton(
+                          icon: Icons.skip_next_rounded,
+                          isActive: true,
+                          activeColor: t.primary,
+                          onTap: () => match.skipMatch(),
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    },
                   ),
                   // Hangup — pill button
                   GestureDetector(
@@ -358,11 +446,13 @@ class _ActiveCallView extends StatelessWidget {
 class _ControlButton extends StatelessWidget {
   final IconData icon;
   final bool isActive;
+  final Color? activeColor;
   final VoidCallback onTap;
 
   const _ControlButton({
     required this.icon,
     required this.isActive,
+    this.activeColor,
     required this.onTap,
   });
 
@@ -376,7 +466,7 @@ class _ControlButton extends StatelessWidget {
         height: 56,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: isActive ? t.destructive : Colors.white.withOpacity(0.08),
+          color: isActive ? (activeColor ?? t.destructive) : Colors.white.withOpacity(0.08),
         ),
         child: Icon(
           icon,

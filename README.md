@@ -17,6 +17,18 @@ A high-performance, real-time chat application built with Flutter and NestJS, fe
 - **QR Code Networking**: Unique QR codes for seamless user identification and networking.
 - **Unified Profile**: Personalized profile with custom avatars and biographical info.
 
+### 📞 High-Fidelity Audio & Video Calls
+- **Crystal Clear Communication**: High-quality calling powered by WebRTC with low latency.
+- **Direct Connect**: Instant connection for random matches, skipping the traditional ringing phase.
+- **Background Preview**: Local camera stream remains active during transitions for a seamless experience.
+- **Call Management**: Toggle camera/microphone, switch views, and hang up with a sleek floating UI.
+
+### 🎲 Random Matchmaking
+- **Live Discovery**: Immersive searching UI with your live camera feed as the background.
+- **Swipe to Skip**: Quickly cycle through potential partners with an intuitive vertical swipe-up gesture.
+- **Queue Awareness**: Real-time indicator showing exactly how many people are matching at that moment.
+- **Persistent Loop**: Automatically return to searching when a partner leaves or skips, keeping you in the action!
+
 ### 🎨 User Experience
 - **Premium Design**: Modern, responsive UI with advanced animations and glassmorphism.
 - **Theme Engine**: Support for both vibrant Light and professional Dark modes.

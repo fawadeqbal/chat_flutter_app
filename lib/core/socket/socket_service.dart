@@ -20,6 +20,12 @@ class SocketService {
   final _pinUpdateController = StreamController<Map<String, dynamic>>.broadcast();
   final _reactionUpdateController = StreamController<Map<String, dynamic>>.broadcast();
 
+  // Matchmaking event stream controllers
+  final _matchFoundController = StreamController<Map<String, dynamic>>.broadcast();
+  final _waitingForPartnerController = StreamController<Map<String, dynamic>>.broadcast();
+  final _partnerSkippedController = StreamController<void>.broadcast();
+  final _queueUpdateController = StreamController<Map<String, dynamic>>.broadcast();
+
   Stream<Map<String, dynamic>> get messageStream => _messageController.stream;
   Stream<Map<String, dynamic>> get typingStream => _typingController.stream;
   Stream<Map<String, dynamic>> get presenceStream => _presenceController.stream;
@@ -28,6 +34,12 @@ class SocketService {
   Stream<Map<String, dynamic>> get socialStream => _socialController.stream;
   Stream<Map<String, dynamic>> get pinUpdateStream => _pinUpdateController.stream;
   Stream<Map<String, dynamic>> get reactionUpdateStream => _reactionUpdateController.stream;
+
+  // Matchmaking event streams
+  Stream<Map<String, dynamic>> get matchFoundStream => _matchFoundController.stream;
+  Stream<Map<String, dynamic>> get waitingForPartnerStream => _waitingForPartnerController.stream;
+  Stream<void> get partnerSkippedStream => _partnerSkippedController.stream;
+  Stream<Map<String, dynamic>> get queueUpdateStream => _queueUpdateController.stream;
 
   IO.Socket? get socket => _socket;
 
@@ -101,6 +113,12 @@ class SocketService {
     s.on('call:ended', (_) => _callEndedController.add(null));
     s.on('call:signal', (data) => _callSignalController.add(Map<String, dynamic>.from(data)));
 
+    // Matchmaking events
+    s.on('match_found', (data) => _matchFoundController.add(Map<String, dynamic>.from(data)));
+    s.on('waiting_for_partner', (data) => _waitingForPartnerController.add(Map<String, dynamic>.from(data ?? {})));
+    s.on('partner_skipped', (_) => _partnerSkippedController.add(null));
+    s.on('queue_update', (data) => _queueUpdateController.add(Map<String, dynamic>.from(data ?? {})));
+
     s.onDisconnect((_) => print('Socket disconnected'));
   }
 
@@ -167,8 +185,8 @@ class SocketService {
   }
 
   // Call emitters
-  void callInit(String roomId, String type) {
-    _socket?.emit('call:init', {'roomId': roomId, 'type': type});
+  void callInit(String roomId, String type, {bool isRandom = false}) {
+    _socket?.emit('call:init', {'roomId': roomId, 'type': type, 'isRandom': isRandom});
   }
 
   void callAnswer(String callId, String roomId, bool accepted) {
@@ -189,6 +207,19 @@ class SocketService {
 
   void callHangup(String callId, String roomId) {
     _socket?.emit('call:hangup', {'callId': callId, 'roomId': roomId});
+  }
+
+  // Matchmaking emitters
+  void startRandomMatch() {
+    _socket?.emit('start_random_match');
+  }
+
+  void skipRandomMatch() {
+    _socket?.emit('skip_random_match');
+  }
+
+  void leaveRandomMode() {
+    _socket?.emit('leave_random_mode');
   }
 
   void dispose() {

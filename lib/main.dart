@@ -7,6 +7,7 @@ import 'providers/chat_provider.dart';
 import 'providers/call_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/social_provider.dart';
+import 'providers/random_match_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/main_screen.dart';
 import 'screens/call/call_screen.dart';
@@ -38,6 +39,10 @@ void main() async {
         ),
         ChangeNotifierProvider(create: (_) => CallProvider(socketService)),
         ChangeNotifierProvider(create: (_) => SocialProvider(socketService)),
+        ChangeNotifierProxyProvider<CallProvider, RandomMatchProvider>(
+          create: (context) => RandomMatchProvider(socketService, Provider.of<CallProvider>(context, listen: false)),
+          update: (_, call, random) => random!..init(),
+        ),
       ],
       child: const ChatApp(),
     ),
@@ -101,9 +106,10 @@ class _ChatAppState extends State<ChatApp> with WidgetsBindingObserver {
           home: Consumer<AuthProvider>(
             builder: (context, auth, _) {
               if (auth.isAuthenticated) {
-                // Initialize CallProvider when authenticated
+                // Initialize matchmaking when authenticated
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   Provider.of<CallProvider>(context, listen: false).init();
+                  Provider.of<RandomMatchProvider>(context, listen: false).init();
                 });
                 return const MainScreen();
               }

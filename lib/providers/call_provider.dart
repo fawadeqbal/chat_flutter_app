@@ -57,7 +57,14 @@ class CallProvider extends ChangeNotifier {
   void _listenToEvents() {
     _socketService.callIncomingStream.listen((data) {
       _incomingCall = data;
-      notifyListeners();
+      
+      // Auto-accept if it's a random match (Direct connect)
+      if (data['isRandom'] == true) {
+        answerCall(true);
+      } else {
+        // Show incoming call dialog for regular calls
+        notifyListeners();
+      }
     });
 
     _socketService.callAcceptedStream.listen((data) async {
@@ -196,28 +203,46 @@ class CallProvider extends ChangeNotifier {
 
   // --- Public Actions ---
 
-  Future<void> initiateCall(String roomId, String type) async {
+  Future<void> ensureLocalStream() async {
+    if (_localStream != null) return;
     try {
-      final hasPermission = await _requestPermissions(type == 'VIDEO');
-      if (!hasPermission) {
-        print('Camera or Microphone permission denied');
-        return;
-      }
+      final hasPermission = await _requestPermissions(true);
+      if (!hasPermission) return;
 
       _localStream = await navigator.mediaDevices.getUserMedia({
         'audio': true,
-        'video': type == 'VIDEO',
+        'video': true,
       });
       localRenderer.srcObject = _localStream;
+      notifyListeners();
+    } catch (e) {
+      print('Failed to ensure local stream: $e');
+    }
+  }
+
+  void stopLocalStream() {
+    if (_activeCall != null || _isCalling) return; // Don't stop if in call
+    _localStream?.getTracks().forEach((track) => track.stop());
+    _localStream?.dispose();
+    _localStream = null;
+    localRenderer.srcObject = null;
+    notifyListeners();
+  }
+
+  Future<void> initiateCall(String roomId, String type, {bool isRandom = false}) async {
+    try {
+      await ensureLocalStream();
+      if (_localStream == null) return;
+
       _isMicOn = true;
       _isVideoOn = type == 'VIDEO';
       _isCalling = true;
       _roomId = roomId;
       notifyListeners();
 
-      _socketService.callInit(roomId, type);
+      _socketService.callInit(roomId, type, isRandom: isRandom);
     } catch (e) {
-      print('Failed to get media devices: $e');
+      print('Failed to initiate call: $e');
     }
   }
 

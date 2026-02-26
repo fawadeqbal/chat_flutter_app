@@ -4,8 +4,10 @@ import '../../providers/auth_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/social_provider.dart';
+import '../../providers/random_match_provider.dart';
 import 'package:intl/intl.dart';
 import '../chat/chat_screen.dart';
+import 'random_match_screen.dart';
 
 class ChatListTab extends StatelessWidget {
   const ChatListTab({super.key});
@@ -113,6 +115,50 @@ class ChatListTab extends StatelessWidget {
                         ],
                       ),
                     ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: InkWell(
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RandomMatchScreen())),
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: t.primary.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: t.primary.withOpacity(0.24), width: 1.5),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: t.primary,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 22),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Random Match',
+                                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: t.textPrimary),
+                                  ),
+                                  Text(
+                                    'Find someone to talk to!',
+                                    style: TextStyle(fontSize: 12, color: t.textSecondary, fontWeight: FontWeight.w600),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Icon(Icons.arrow_forward_ios_rounded, size: 14, color: t.primary),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                   Expanded(
                     child: RefreshIndicator(
                       onRefresh: () => chat.refreshFromServer(),
