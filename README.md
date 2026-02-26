@@ -23,6 +23,19 @@ A high-performance, real-time chat application built with Flutter and NestJS, fe
 - **Web & Mobile**: Fully cross-platform experience optimized for Chrome and Android.
 - **Push Notifications**: Integrated local notifications to never miss a message.
 
+## 🏗 System Explanation
+
+### Architecture Overview
+PingCrood follows a decoupled, event-driven architecture designed for high availability and low latency:
+- **Event-Driven Messaging**: Core chat logic relies on a custom implementation of **Socket.io**. When a message is sent, the backend performs a transactional Prisma write and simultaneously broadcasts events to the sender's and receiver's active socket threads.
+- **Presence Engine**: User status (Online/Offline/Typing) is managed via a dedicated Redis-backed presence layer within NestJS, ensuring that even under high load, status updates remain near-instantaneous.
+- **Relational Integrity**: PostgreSQL ensures absolute data consistency for friend relationships, room memberships, and message history, while Prisma provides a type-safe interface for all database operations.
+
+### Data Flow
+1. **Connection**: Client establishes a secure WebSocket connection using JWT handshaking.
+2. **Notification**: Incoming messages trigger both a WebSocket event (if the app is interactive) and a Local Notification (if the app is backgrounded).
+3. **Synchronization**: The **Provider** pattern in Flutter ensures that any state change (new message, reaction, presence update) is immediately reflected across all relevant UI components without full-page reloads.
+
 ## 🛠 Technical Stack
 
 ### Frontend (Flutter)
@@ -58,3 +71,30 @@ A high-performance, real-time chat application built with Flutter and NestJS, fe
    - `flutter pub get`
    - Update `baseUrl` in `ApiClient` to point to your backend.
    - `flutter run`
+
+## 🗺 Future Roadmap
+
+We are constantly evolving. Here's what we have planned:
+- [ ] **End-to-End Encryption (E2EE)**: Implementing Signal Protocol for ultimate message privacy.
+- [ ] **WebRTC Group Calls**: Scaling our current 1-on-1 calling to support multi-party video conferencing.
+- [ ] **AI-Powered Moderation**: Intelligent filtering and automated moderation for group environments.
+- [ ] **Rich Media Sharing**: Dedicated support for high-fidelity voice notes, document sharing, and interactive polls.
+- [ ] **Status Stories**: A professional "Updates" feed to share fleeting moments with your network.
+
+## 🤝 Open Source & Contributions
+
+PingCrood is proudly **Open Source** and open for contributions from the community! We believe in building the future of communication together.
+
+### How to Contribute
+1. **Fork the Repo**: Create your own copy of the project.
+2. **Explore Issues**: Look for "good first issue" or "enhancement" tags in our issue tracker.
+3. **Submit a PR**: We love clean code and detailed descriptions. Please ensure your code follows the established Linting patterns.
+4. **Documentation**: Help us improve this README or contribute to our Wiki.
+
+### Contribution Guidelines
+- **Maintain Code Style**: We use strict linting rules for both Flutter and NestJS.
+- **Write Tests**: Any new feature should ideally come with a verification test.
+- **Be Professional**: We follow a standard Code of Conduct to ensure a welcoming environment for everyone.
+
+### License
+Distributed under the **MIT License**. See `LICENSE` for more information.
