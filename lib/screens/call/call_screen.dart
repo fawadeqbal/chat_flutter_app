@@ -24,7 +24,7 @@ class CallOverlay extends StatelessWidget {
 }
 
 // ──────────────────────────────────────────
-// Incoming Call Dialog
+// Incoming Call Dialog — Snapchat Style
 // ──────────────────────────────────────────
 class _IncomingCallDialog extends StatelessWidget {
   final CallProvider call;
@@ -36,23 +36,24 @@ class _IncomingCallDialog extends StatelessWidget {
     final callerName = incoming['fromUserName']?.toString() ?? 'Unknown';
     final callType = incoming['type']?.toString() ?? 'AUDIO';
     final isVideo = callType == 'VIDEO';
+    final t = Provider.of<ThemeProvider>(context, listen: false);
 
     return Material(
-      color: Colors.black.withOpacity(0.85),
+      color: Colors.black.withOpacity(0.88),
       child: Center(
         child: Container(
           width: 320,
           padding: const EdgeInsets.all(40),
           decoration: BoxDecoration(
-            color: const Color(0xFF1A1A2E),
+            color: t.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
             borderRadius: BorderRadius.circular(32),
-            border: Border.all(color: Colors.white.withOpacity(0.08)),
+            border: Border.all(color: t.border),
             boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.4), blurRadius: 40)],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Pulsing icon
+              // Pulsing circular icon
               Stack(
                 alignment: Alignment.center,
                 children: [
@@ -64,7 +65,7 @@ class _IncomingCallDialog extends StatelessWidget {
                       height: 96 * value,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: const Color(0xFF7C3AED).withOpacity(0.15),
+                        color: t.primary.withOpacity(0.15),
                       ),
                     ),
                   ),
@@ -73,10 +74,8 @@ class _IncomingCallDialog extends StatelessWidget {
                     height: 96,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF7C3AED), Color(0xFF6366F1)],
-                      ),
-                      boxShadow: [BoxShadow(color: const Color(0xFF7C3AED).withOpacity(0.4), blurRadius: 24)],
+                      color: t.primary,
+                      boxShadow: [BoxShadow(color: t.primary.withOpacity(0.4), blurRadius: 24)],
                     ),
                     child: Icon(
                       isVideo ? Icons.videocam_rounded : Icons.phone_rounded,
@@ -89,7 +88,7 @@ class _IncomingCallDialog extends StatelessWidget {
               const SizedBox(height: 24),
               Text(
                 '${callType.toLowerCase()} Call',
-                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white),
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: t.textPrimary),
               ),
               const SizedBox(height: 8),
               Text(
@@ -97,7 +96,7 @@ class _IncomingCallDialog extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
-                  color: const Color(0xFF7C3AED),
+                  color: t.primary,
                   letterSpacing: 1.5,
                 ),
               ),
@@ -113,10 +112,10 @@ class _IncomingCallDialog extends StatelessWidget {
                       height: 64,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.red.withOpacity(0.1),
-                        border: Border.all(color: Colors.red.withOpacity(0.3)),
+                        color: t.destructive.withOpacity(0.1),
+                        border: Border.all(color: t.destructive.withOpacity(0.3)),
                       ),
-                      child: const Icon(Icons.call_end_rounded, color: Colors.red, size: 28),
+                      child: Icon(Icons.call_end_rounded, color: t.destructive, size: 28),
                     ),
                   ),
                   const SizedBox(width: 32),
@@ -128,11 +127,11 @@ class _IncomingCallDialog extends StatelessWidget {
                       height: 64,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.green.withOpacity(0.1),
-                        border: Border.all(color: Colors.green.withOpacity(0.3)),
-                        boxShadow: [BoxShadow(color: Colors.green.withOpacity(0.2), blurRadius: 16)],
+                        color: t.online.withOpacity(0.1),
+                        border: Border.all(color: t.online.withOpacity(0.3)),
+                        boxShadow: [BoxShadow(color: t.online.withOpacity(0.2), blurRadius: 16)],
                       ),
-                      child: const Icon(Icons.phone_rounded, color: Colors.green, size: 28),
+                      child: Icon(Icons.phone_rounded, color: t.online, size: 28),
                     ),
                   ),
                 ],
@@ -146,7 +145,7 @@ class _IncomingCallDialog extends StatelessWidget {
 }
 
 // ──────────────────────────────────────────
-// Active Call View
+// Active Call View — Snapchat Style
 // ──────────────────────────────────────────
 class _ActiveCallView extends StatelessWidget {
   final CallProvider call;
@@ -157,9 +156,10 @@ class _ActiveCallView extends StatelessWidget {
     final callData = call.activeCall;
     final userName = callData?['userName']?.toString() ?? '';
     final isCalling = call.isCalling;
+    final t = Provider.of<ThemeProvider>(context, listen: false);
 
     return Material(
-      color: const Color(0xFF0A0A1A),
+      color: const Color(0xFF121212),
       child: SafeArea(
         child: Column(
           children: [
@@ -177,9 +177,9 @@ class _ActiveCallView extends StatelessWidget {
                           Container(
                             width: 6,
                             height: 6,
-                            decoration: const BoxDecoration(
+                            decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Colors.red,
+                              color: t.destructive,
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -199,11 +199,7 @@ class _ActiveCallView extends StatelessWidget {
                           padding: const EdgeInsets.only(top: 4),
                           child: Text(
                             userName,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
                           ),
                         ),
                     ],
@@ -212,7 +208,7 @@ class _ActiveCallView extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       call.formattedDuration,
@@ -233,16 +229,16 @@ class _ActiveCallView extends StatelessWidget {
               child: Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF111128),
-                  borderRadius: BorderRadius.circular(20),
+                  color: const Color(0xFF1E1E1E),
+                  borderRadius: BorderRadius.circular(24),
                   border: Border.all(color: Colors.white.withOpacity(0.06)),
                 ),
                 child: Stack(
                   children: [
-                    // Remote video (full)
+                    // Remote video
                     if (call.remoteStream != null)
                       ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(24),
                         child: RTCVideoView(
                           call.remoteRenderer,
                           objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
@@ -254,17 +250,13 @@ class _ActiveCallView extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Container(
-                              width: 64,
-                              height: 64,
+                              width: 72,
+                              height: 72,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: Colors.white.withOpacity(0.05),
                               ),
-                              child: Icon(
-                                Icons.videocam_rounded,
-                                size: 28,
-                                color: Colors.white.withOpacity(0.3),
-                              ),
+                              child: Icon(Icons.videocam_rounded, size: 28, color: Colors.white.withOpacity(0.3)),
                             ),
                             const SizedBox(height: 12),
                             Text(
@@ -280,7 +272,7 @@ class _ActiveCallView extends StatelessWidget {
                         ),
                       ),
 
-                    // Local video (PiP)
+                    // Local PiP
                     if (call.localStream != null)
                       Positioned(
                         bottom: 12,
@@ -289,12 +281,12 @@ class _ActiveCallView extends StatelessWidget {
                           width: 100,
                           height: 140,
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(16),
                             border: Border.all(color: Colors.white.withOpacity(0.1)),
                             boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 12)],
                           ),
                           child: ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(16),
                             child: RTCVideoView(
                               call.localRenderer,
                               mirror: true,
@@ -310,36 +302,34 @@ class _ActiveCallView extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            // Controls
+            // Controls — Snapchat circular buttons
             Padding(
               padding: const EdgeInsets.only(bottom: 32, left: 24, right: 24),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  // Mic toggle
                   _ControlButton(
                     icon: call.isMicOn ? Icons.mic_rounded : Icons.mic_off_rounded,
                     isActive: !call.isMicOn,
                     onTap: call.toggleMic,
                   ),
-                  // Video toggle
                   _ControlButton(
                     icon: call.isVideoOn ? Icons.videocam_rounded : Icons.videocam_off_rounded,
                     isActive: !call.isVideoOn,
                     onTap: call.toggleVideo,
                   ),
-                  // Hangup
+                  // Hangup — pill button
                   GestureDetector(
                     onTap: call.hangupCall,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
                       decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [BoxShadow(color: Colors.red.withOpacity(0.3), blurRadius: 16)],
+                        color: t.destructive,
+                        borderRadius: BorderRadius.circular(28),
+                        boxShadow: [BoxShadow(color: t.destructive.withOpacity(0.3), blurRadius: 16)],
                       ),
-                      child: Row(
-                        children: const [
+                      child: const Row(
+                        children: [
                           Icon(Icons.call_end_rounded, color: Colors.white, size: 20),
                           SizedBox(width: 8),
                           Text(
@@ -378,14 +368,15 @@ class _ControlButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = Provider.of<ThemeProvider>(context, listen: false);
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 56,
         height: 56,
         decoration: BoxDecoration(
-          color: isActive ? Colors.red : Colors.white.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(16),
+          shape: BoxShape.circle,
+          color: isActive ? t.destructive : Colors.white.withOpacity(0.08),
         ),
         child: Icon(
           icon,

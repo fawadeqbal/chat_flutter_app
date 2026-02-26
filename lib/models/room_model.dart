@@ -7,6 +7,10 @@ class RoomModel {
   final List<RoomMember> members;
   final MessageModel? lastMessage;
   final int unreadCount;
+  final String? pinnedMessageId;
+  final MessageModel? pinnedMessage;
+
+  bool get isGroup => type == 'GROUP';
 
   RoomModel({
     required this.id,
@@ -14,6 +18,8 @@ class RoomModel {
     required this.members,
     this.lastMessage,
     this.unreadCount = 0,
+    this.pinnedMessageId,
+    this.pinnedMessage,
   });
 
   factory RoomModel.fromJson(Map<String, dynamic> json) {
@@ -25,8 +31,33 @@ class RoomModel {
           : [],
       lastMessage: json['lastMessage'] != null
           ? MessageModel.fromJson(json['lastMessage'])
-          : null,
+          : (json['messages'] != null && (json['messages'] as List).isNotEmpty)
+              ? MessageModel.fromJson(json['messages'][0])
+              : null,
       unreadCount: json['unreadCount'] ?? 0,
+      pinnedMessageId: json['pinnedMessageId']?.toString(),
+      pinnedMessage: json['pinnedMessage'] != null
+          ? MessageModel.fromJson(json['pinnedMessage'])
+          : null,
+    );
+  }
+
+  RoomModel copyWith({
+    String? type,
+    List<RoomMember>? members,
+    MessageModel? lastMessage,
+    int? unreadCount,
+    String? pinnedMessageId,
+    MessageModel? pinnedMessage,
+  }) {
+    return RoomModel(
+      id: id,
+      type: type ?? this.type,
+      members: members ?? this.members,
+      lastMessage: lastMessage ?? this.lastMessage,
+      unreadCount: unreadCount ?? this.unreadCount,
+      pinnedMessageId: pinnedMessageId ?? this.pinnedMessageId,
+      pinnedMessage: pinnedMessage ?? this.pinnedMessage,
     );
   }
 }

@@ -10,98 +10,128 @@ class ThemeProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ─── Color Tokens ───
+  // ─── Snapchat-Style Color Tokens ───
+
+  // Primary & Secondary
+  // Primary & Secondary
+  Color get primary => _isDarkMode ? const Color(0xFF00AF91) : const Color(0xFF00897B);
+  Color get secondary => primary;
 
   // Backgrounds
-  Color get bgPrimary => _isDarkMode ? const Color(0xFF0A0A1A) : const Color(0xFFF8F9FC);
-  Color get bgSurface => _isDarkMode ? const Color(0xFF111128) : Colors.white;
-  Color get bgInput => _isDarkMode ? const Color(0xFF1A1A3E) : const Color(0xFFF0F1F5);
-  Color get bgCard => _isDarkMode ? const Color(0xFF111128) : Colors.white;
-  Color get bgGradientStart => _isDarkMode ? const Color(0xFF0A0A1A) : const Color(0xFFF8F9FC);
-  Color get bgGradientMid => _isDarkMode ? const Color(0xFF15153A) : const Color(0xFFF0F1F8);
-  Color get bgGradientEnd => _isDarkMode ? const Color(0xFF0D0D2B) : const Color(0xFFE8E9F0);
+  Color get bgPrimary => _isDarkMode ? const Color(0xFF000000) : const Color(0xFFFFFFFF);
+  Color get bgSurface => _isDarkMode ? const Color(0xFF1E1E1E) : const Color(0xFFFFFFFF);
+  Color get bgSecondary => _isDarkMode ? const Color(0xFF121212) : const Color(0xFFF0F0F2);
+  Color get bgInput => _isDarkMode ? const Color(0xFF1E1E1E) : const Color(0xFFEBEBEB);
+  Color get bgCard => _isDarkMode ? const Color(0xFF1E1E1E) : Colors.white;
 
   // Text
-  Color get textPrimary => _isDarkMode ? Colors.white : const Color(0xFF1A1A2E);
-  Color get textSecondary => _isDarkMode ? Colors.white.withOpacity(0.5) : const Color(0xFF6B7280);
-  Color get textMuted => _isDarkMode ? Colors.white.withOpacity(0.35) : const Color(0xFF9CA3AF);
-  Color get textDim => _isDarkMode ? Colors.white.withOpacity(0.25) : const Color(0xFFBCC0C8);
+  Color get textPrimary => _isDarkMode ? Colors.white : const Color(0xFF000000);
+  Color get textSecondary => const Color(0xFF8E8E93);
+  Color get textMuted => _isDarkMode ? const Color(0xFFA1A1AA) : const Color(0xFF666666);
+  Color get textDim => _isDarkMode ? const Color(0xFFD1D1D6) : const Color(0xFF3C3C3E);
   Color get textOnPrimary => Colors.white;
 
-  // Accent
-  Color get accent => const Color(0xFF7C3AED);
-  Color get accentLight => _isDarkMode ? const Color(0xFF7C3AED).withOpacity(0.15) : const Color(0xFFEDE9FE);
-  Color get accentAvatarStart => _isDarkMode ? const Color(0xFF7C3AED).withOpacity(0.3) : const Color(0xFFEDE9FE);
-  Color get accentAvatarEnd => _isDarkMode ? const Color(0xFF6366F1).withOpacity(0.3) : const Color(0xFFE0E7FF);
+  // Accent (legacy compat — maps to primary)
+  Color get accent => primary;
+  Color get accentLight => _isDarkMode ? primary.withOpacity(0.15) : const Color(0xFFE0FFF7);
+
+  // Avatar Colors — Snapchat-style colorful circle backgrounds
+  static const List<Color> avatarColors = [
+    Color(0xFF00B28F), // Mint
+    Color(0xFFFF6B8A), // Coral
+    Color(0xFF5B7FFF), // Blue
+    Color(0xFFFFB340), // Orange
+    Color(0xFFA78BFA), // Lavender
+    Color(0xFFFF5252), // Red
+    Color(0xFF00BCD4), // Cyan
+    Color(0xFFE040FB), // Pink
+  ];
+
+  Color avatarColor(String name) {
+    if (name.isEmpty) return avatarColors[0];
+    final index = name.codeUnitAt(0) % avatarColors.length;
+    return avatarColors[index];
+  }
+
+  Color get accentAvatarStart => primary.withOpacity(0.2);
+  Color get accentAvatarEnd => primary.withOpacity(0.2);
 
   // Borders
-  Color get border => _isDarkMode ? Colors.white.withOpacity(0.04) : const Color(0xFFE5E7EB);
-  Color get borderInput => _isDarkMode ? const Color(0xFF7C3AED) : const Color(0xFF7C3AED);
+  Color get border => _isDarkMode ? Colors.white.withOpacity(0.15) : const Color(0x1A000000);
+  Color get borderInput => primary;
 
   // Message Bubbles
-  Color get msgMeBg => const Color(0xFF7C3AED);
-  Color get msgOtherBg => _isDarkMode ? const Color(0xFF1A1A3E) : const Color(0xFFF0F1F5);
+  Color get msgMeBg => const Color(0xFF00796B);
+  Color get msgOtherBg => _isDarkMode ? const Color(0xFF2C2C2E) : const Color(0xFFEBEBEB);
   Color get msgMeText => Colors.white;
-  Color get msgOtherText => _isDarkMode ? Colors.white.withOpacity(0.85) : const Color(0xFF1A1A2E);
-  Color get msgMeTime => Colors.white.withOpacity(0.6);
-  Color get msgOtherTime => _isDarkMode ? Colors.white.withOpacity(0.25) : const Color(0xFF9CA3AF);
+  Color get msgOtherText => _isDarkMode ? Colors.white : const Color(0xFF000000);
+  Color get msgMeTime => Colors.white.withOpacity(0.65);
+  Color get msgOtherTime => _isDarkMode ? Colors.white.withOpacity(0.4) : const Color(0xFF666666);
 
   // Status
   Color get online => const Color(0xFF22C55E);
-  Color get onlineBorder => _isDarkMode ? const Color(0xFF111128) : Colors.white;
+  Color get onlineBorder => bgPrimary;
 
   // Icons & misc
-  Color get iconMuted => _isDarkMode ? Colors.white.withOpacity(0.4) : const Color(0xFF9CA3AF);
-  Color get snackbarError => Colors.red.shade700;
+  Color get iconMuted => _isDarkMode ? Colors.white.withOpacity(0.45) : const Color(0xFF8E8E93);
+  Color get snackbarError => const Color(0xFFFF6B8A);
+  Color get destructive => const Color(0xFFFF6B8A);
 
   ThemeData get themeData {
     return ThemeData(
       brightness: _isDarkMode ? Brightness.dark : Brightness.light,
       scaffoldBackgroundColor: bgPrimary,
       colorScheme: _isDarkMode
-          ? const ColorScheme.dark(
-              primary: Color(0xFF7C3AED),
-              secondary: Color(0xFF6366F1),
-              surface: Color(0xFF111128),
+          ? ColorScheme.dark(
+              primary: primary,
+              secondary: secondary,
+              surface: const Color(0xFF1E1E1E),
             )
-          : const ColorScheme.light(
-              primary: Color(0xFF7C3AED),
-              secondary: Color(0xFF6366F1),
+          : ColorScheme.light(
+              primary: primary,
+              secondary: secondary,
               surface: Colors.white,
             ),
       appBarTheme: AppBarTheme(
-        backgroundColor: bgPrimary,
+        backgroundColor: _isDarkMode ? bgPrimary : bgSecondary,
         elevation: 0,
-        centerTitle: false,
+        centerTitle: true,
         titleTextStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: textPrimary),
         iconTheme: IconThemeData(color: textPrimary),
+      ),
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        backgroundColor: _isDarkMode ? bgPrimary : bgSecondary,
+        selectedItemColor: primary,
+        unselectedItemColor: textMuted,
+        elevation: 0,
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: bgInput,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(100), borderSide: BorderSide.none),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: borderInput, width: 1.5),
+          borderRadius: BorderRadius.circular(100),
+          borderSide: BorderSide(color: primary, width: 1.5),
         ),
         labelStyle: TextStyle(color: textMuted),
         hintStyle: TextStyle(color: textDim),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: accent,
+          backgroundColor: primary,
           foregroundColor: Colors.white,
           elevation: 0,
           padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
         ),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: accent,
+        backgroundColor: primary,
         foregroundColor: Colors.white,
-        elevation: 8,
+        elevation: 6,
+        shape: const CircleBorder(),
       ),
     );
   }

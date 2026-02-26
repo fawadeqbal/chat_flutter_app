@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../core/socket/socket_service.dart';
 
 class CallProvider extends ChangeNotifier {
@@ -182,10 +183,27 @@ class CallProvider extends ChangeNotifier {
     };
   }
 
+  Future<bool> _requestPermissions(bool video) async {
+    final micStatus = await Permission.microphone.request();
+    if (!micStatus.isGranted) return false;
+
+    if (video) {
+      final camStatus = await Permission.camera.request();
+      if (!camStatus.isGranted) return false;
+    }
+    return true;
+  }
+
   // --- Public Actions ---
 
   Future<void> initiateCall(String roomId, String type) async {
     try {
+      final hasPermission = await _requestPermissions(type == 'VIDEO');
+      if (!hasPermission) {
+        print('Camera or Microphone permission denied');
+        return;
+      }
+
       _localStream = await navigator.mediaDevices.getUserMedia({
         'audio': true,
         'video': type == 'VIDEO',
@@ -209,6 +227,20 @@ class CallProvider extends ChangeNotifier {
     if (accepted) {
       try {
         final callType = _incomingCall!['type']?.toString() ?? 'AUDIO';
+        
+        final hasPermission = await _requestPermissions(callType == 'VIDEO');
+        if (!hasPermission) {
+          print('Camera or Microphone permission denied');
+          _socketService.callAnswer(
+            _incomingCall!['callId']?.toString() ?? '',
+            _incomingCall!['roomId']?.toString() ?? '',
+            false,
+          );
+          _incomingCall = null;
+          notifyListeners();
+          return;
+        }
+
         _localStream = await navigator.mediaDevices.getUserMedia({
           'audio': true,
           'video': callType == 'VIDEO',
